@@ -1,0 +1,50 @@
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.pdb
+*.egg-info/
+*.egg
+*.log
+
+# Virtual environments
+.env
+.venv/
+venv/
+ENV/
+
+# IDEs & Editors
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Byte-compiled / C extensions
+*.so
+*.dll
+*.dylib
+
+# Testing
+.coverage
+htmlcov/
+.tox/
+pytest_cache/
+
+# Build
+build/
+dist/
+.eggs/
+*.manifest
+*.spec
+
+# Migrations (if auto-generated, e.g., Alembic)
+migrations/versions/*.py
+
+# Supabase
+.supabase/
+
+# OS files
+.DS_Store
+Thumbs.db
