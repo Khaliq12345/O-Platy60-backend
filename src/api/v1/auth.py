@@ -27,12 +27,12 @@ def login(
 
 @router.post("/refresh", response_model=auth_schema.Session)
 def refresh(
-    refresh_data: auth_schema.Refresh,
+    token: auth_schema.Token,
     supabase: SupabaseService = Depends(get_supabase_service),
 ):
     """Refreshes a user session."""
     try:
-        return supabase.refresh_session(refresh_data)
+        return supabase.refresh_session(token)
     except AuthInvalidCredentialsError as e:
         raise HTTPException(status_code=400, detail=f"Invalid credentials - {e}")
     except Exception as e:

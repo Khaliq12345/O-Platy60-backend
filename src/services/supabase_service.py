@@ -1,5 +1,4 @@
 from supabase import (
-    AuthInvalidCredentialsError,
     Client,
     create_client,
 )
@@ -21,9 +20,12 @@ class SupabaseService:
         )
         return response.session
 
-    def refresh_session(self, refresh_data: auth_schema.Refresh):
+    def refresh_session(self, refresh_data: auth_schema.Token):
         """Refresh a user session"""
-        response = self.client.auth.refresh_session(refresh_data.refresh_token)
+        self.client.auth.set_session(
+            refresh_data.access_token, refresh_data.refresh_token
+        )
+        response = self.client.auth.refresh_session()
         return response.session
 
     def logout(self, token: auth_schema.Token):
