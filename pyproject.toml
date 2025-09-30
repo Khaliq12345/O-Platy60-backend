@@ -8,4 +8,5 @@ dependencies = [
     "fastapi[all]>=0.117.1",
     "pydantic>=2.11.9",
     "sqlmodel>=0.0.25",
+    "supabase>=2.20.0",
 ]
