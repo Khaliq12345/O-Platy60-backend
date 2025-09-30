@@ -4,9 +4,7 @@ import uvicorn
 
 def main():
     print("Hello from o-platy60-backend!")
-    uvicorn.run(
-        app.app,
-    )
+    uvicorn.run(app.app)
 
 
 if __name__ == "__main__":
