@@ -6,52 +6,40 @@ from datetime import datetime, timezone
 
 
 class OrdersService(SupabaseService):
-    orders_table: str
-    ingredients_table: str
-
     def __init__(self) -> None:
         super().__init__()
-        self.orders_table = "orders"
-        self.ingredients_table = "ingredients"
 
     def validate_order_business_rules(self, order_data: dict[str, Any]) -> None:
         # Valide les règles métier d'une commande
         quantity_ordered = order_data.get("quantity_ordered")
         unit_price_ordered = order_data.get("unit_price_ordered")
         value_ordered = order_data.get("value_ordered")
-
+        
         # Vérifier que la quantité commandée est positive
         if quantity_ordered is not None and quantity_ordered <= 0:
             raise ValueError("La quantité commandée doit être positive")
-
+        
         # Vérifier que le prix unitaire est positif
         if unit_price_ordered is not None and unit_price_ordered < 0:
             raise ValueError("Le prix unitaire commandé ne peut pas être négatif")
-
+        
         # Vérifier que la valeur commandée est cohérente
         if value_ordered is not None and value_ordered < 0:
             raise ValueError("La valeur commandée ne peut pas être négative")
-
+        
         # Vérifier la cohérence entre quantité, prix unitaire et valeur
-        if all([quantity_ordered, unit_price_ordered, value_ordered]):
+        # code modifié pour corriger l"erreur : Operator "*" not supported for "None
+        if all([quantity_ordered is not None, unit_price_ordered is not None, value_ordered is not None]):
+            # À ce stade, on sait que les valeurs ne sont pas None
+            assert quantity_ordered is not None
+            assert unit_price_ordered is not None
+            assert value_ordered is not None
+            
             expected_value = quantity_ordered * unit_price_ordered
             if abs(value_ordered - expected_value) > 0.01:  # Tolérance pour les arrondis
                 raise ValueError(
                     "La valeur commandée ne correspond pas à la valeur"
                 )
-
-    def validate_filter_values(self, status: str | None) -> str | None:
-        valid_status = None
-
-        if status:
-            if status in ["pending", "confirmed", "completed", "cancelled"]:
-                valid_status = status
-            else:
-                raise ValueError(
-                    f"Status invalide: {status}. Valeurs autorisées: pending, confirmed, completed, cancelled"
-                )
-
-        return valid_status
 
     def get_orders(
         self,
@@ -62,7 +50,7 @@ class OrdersService(SupabaseService):
     ) -> dict[str, Any]:
         # Récupère la liste des commandes avec filtres et pagination
         try:
-            query = self.client.table(self.orders_table).select(
+            query = self.client.table("orders").select(
                 "*, ingredients(*)",
                 count="exact",  # type: ignore
             )
@@ -83,6 +71,9 @@ class OrdersService(SupabaseService):
             response = query.range(offset, offset + limit - 1).execute()
 
             # Vérification de la réponse
+            if not response:
+                raise Exception("Aucune réponse de la base de données")
+                
             if isinstance(response, str):
                 raise Exception(f"Erreur de requête: {response}")
 
@@ -93,12 +84,14 @@ class OrdersService(SupabaseService):
             total = response.count if response.count is not None else 0
 
             return {
-                "orders": response.data,
-                "total": total,
-                "page": page,
-                "limit": limit,
-                "has_next": offset + limit < total,
-                "has_prev": page > 1,
+                "data": response.data,
+                "requests": {
+                    "total": total,
+                    "page": page,
+                    "limit": limit,
+                    "has_next": offset + limit < total,
+                    "has_prev": page > 1,
+                }
             }
         except Exception as e:
             raise Exception(f"Erreur lors de la récupération des commandes: {str(e)}")
@@ -117,10 +110,13 @@ class OrdersService(SupabaseService):
 
             # Insertion de la commande
             order_response = (
-                self.client.table(self.orders_table).insert(order_dict).execute()
+                self.client.table("orders").insert(order_dict).execute()
             )
 
             # Vérification que la réponse a l'attribut data
+            if not order_response:
+                raise Exception("Aucune réponse de la base de données")
+                
             if isinstance(order_response, str):
                 raise Exception(f"Erreur de requête: {order_response}")
 
@@ -142,28 +138,26 @@ class OrdersService(SupabaseService):
         # Récupère une commande par son ID avec l'ingrédient
         try:
             response = (
-                self.client.table(self.orders_table)
+                self.client.table("orders")
                 .select("*, ingredients(*)")
                 .eq("id", order_id)
                 .eq("delete", False)
+                .single()  
                 .execute()
             )
-
-            # Vérification que la réponse a l'attribut data
-            if isinstance(response, str):
-                raise Exception(f"Erreur de requête: {response}")
-
-            if not hasattr(response, "data") or not response.data:
+            
+            # Vérification que response.data est bien un dict
+            if not response.data:
                 raise Exception("Commande non trouvée")
-
-            result = response.data[0]
-            if not isinstance(result, dict):
+            
+            if not isinstance(response.data, dict):
                 raise Exception("Format de réponse invalide")
-            return result
-
+            
+            return response.data
+            
         except Exception as e:
-            if "non trouvée" in str(e):
-                raise e
+            if "0 rows" in str(e) or "not found" in str(e).lower() or "non trouvée" in str(e):
+                raise Exception("Commande non trouvée")
             raise Exception(f"Erreur lors de la récupération de la commande: {str(e)}")
 
     def update_order(
@@ -180,12 +174,15 @@ class OrdersService(SupabaseService):
 
             if update_dict:
                 response = (
-                    self.client.table(self.orders_table)
+                    self.client.table("orders")
                     .update(update_dict)
                     .eq("id", order_id)
                     .execute()
                 )
 
+                if not response:
+                    raise Exception("Aucune réponse de la base de données")
+                    
                 if isinstance(response, str):
                     raise Exception(f"Erreur de requête: {response}")
 
@@ -203,7 +200,7 @@ class OrdersService(SupabaseService):
 
             # Suppression logique
             _ = (
-                self.client.table(self.orders_table)
+                self.client.table("orders")
                 .update({"delete": True})
                 .eq("id", order_id)
                 .execute()
@@ -215,57 +212,3 @@ class OrdersService(SupabaseService):
             if "non trouvée" in str(e):
                 raise e
             raise Exception(f"Erreur lors de la suppression de la commande: {str(e)}")
-
-    def adjust_stock(self, order_id: int, adjustments: dict[str, Any]) -> dict[str, Any]:
-        # Ajuste les quantités/prix reçus d'une commande
-        try:
-            _ = self.get_order_by_id(order_id)
-
-            # Application des ajustements
-            for adjustment in adjustments.get("adjustments", []):
-                # Vérifier que l'adjustment concerne bien cette commande
-                if adjustment.get("order_id") != order_id:
-                    raise ValueError(
-                        f"L'ajustement ne concerne pas la commande {order_id}"
-                    )
-
-                # Calcul de la nouvelle valeur reçue
-                new_quantity = adjustment.get("new_quantity_received", 0)
-                new_price = adjustment.get("new_unit_price_received", 0)
-                new_value_received = new_quantity * new_price
-
-                # Mise à jour de la commande
-                update_data: dict[str, Any] = {
-                    "quantity_received": new_quantity,
-                    "unit_price_received": new_price,
-                    "value_received": new_value_received,
-                }
-
-                # Ajouter la raison dans les notes
-                reason = adjustment.get("reason")
-                if reason:
-                    current_order = self.get_order_by_id(order_id)
-                    current_notes = current_order.get("notes", "")
-                    if isinstance(current_notes, str):
-                        update_data["notes"] = (
-                            f"{current_notes}\nAjustement: {reason}"
-                            if current_notes
-                            else f"Ajustement: {reason}"
-                        )
-                    else:
-                        update_data["notes"] = f"Ajustement: {reason}"
-
-                _ = (
-                    self.client.table(self.orders_table)
-                    .update(update_data)
-                    .eq("id", order_id)
-                    .execute()
-                )
-
-            # Récupération de la commande mise à jour
-            return self.get_order_by_id(order_id)
-
-        except Exception as e:
-            if "non trouvée" in str(e) or "non trouvé" in str(e):
-                raise e
-            raise Exception(f"Erreur lors de l'ajustement du stock: {str(e)}")

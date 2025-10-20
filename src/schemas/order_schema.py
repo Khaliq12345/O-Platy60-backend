@@ -18,16 +18,3 @@ class ORDER(BaseModel):
     value_received: Optional[float] = None
     completed_at: Optional[datetime] = None
     delete: Optional[bool] = None
-
-    class Config:
-        from_attributes = True
-
-
-# Réponse pour les listes paginées
-class OrderListResponse(BaseModel):
-    orders: list[ORDER]
-    total: int
-    page: int
-    limit: int
-    has_next: bool
-    has_prev: bool

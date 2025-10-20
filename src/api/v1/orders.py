@@ -4,6 +4,7 @@ from fastapi import status as http_status
 from src.schemas import order_schema
 from src.api.dependencies import get_orders_service, orders_depends
 from src.services.supabase_services.order_service import OrdersService
+from typing import Any 
 
 
 # Définir les énums
@@ -17,7 +18,7 @@ class OrderStatusEnum(str, Enum):
 router = APIRouter(prefix="/api/v1/orders", tags=["Orders"])
 
 
-@router.get("/", response_model=order_schema.OrderListResponse)
+@router.get("/")
 def get_orders(
     status: OrderStatusEnum | None = Query(None, description="Filtrer par statut"),
     ingredient_id: str | None = Query(None, description="Filtrer par ingredient"),
@@ -27,12 +28,14 @@ def get_orders(
 ):
     # Récupère la liste des commandes avec filtres et pagination.
     try:
-        return orders_service.get_orders(
+        result = orders_service.get_orders(
             status=status.value if status else None,
             ingredient_id=ingredient_id,
             page=page,
             limit=limit
         )
+        
+        return result
     except ValueError as e:
         raise HTTPException(
             status_code=http_status.HTTP_400_BAD_REQUEST,
@@ -47,7 +50,7 @@ def get_orders(
 
 @router.post("/", response_model=order_schema.ORDER, status_code=http_status.HTTP_201_CREATED)
 def create_order(
-    order_data: dict,
+    order_data: dict[str, Any],
     orders_service: OrdersService = Depends(get_orders_service),
 ):
     # Crée une nouvelle commande.
@@ -89,7 +92,7 @@ def get_order(
 @router.put("/{order_id}", response_model=order_schema.ORDER)
 def update_order(
     order_id: int,
-    update_data: dict,
+    update_data: dict[str, Any],
     orders_service: OrdersService = Depends(get_orders_service),
 ):
     # Met à jour une commande existante.
@@ -125,26 +128,4 @@ def delete_order(
         raise HTTPException(
             status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Une erreur serveur est survenue lors de la suppression",
-        )
-
-
-@router.post("/{order_id}/adjust", response_model=order_schema.ORDER)
-def adjust_order_stock(
-    order_id: int,
-    adjustments: dict,
-    orders_service: OrdersService = Depends(get_orders_service),
-):
-    # Ajustement rapide du stock d'une commande.
-
-    try:
-        return orders_service.adjust_stock(order_id, adjustments)
-    except Exception as e:
-        if "non trouvé" in str(e):
-            raise HTTPException(
-                status_code=http_status.HTTP_404_NOT_FOUND,
-                detail="Commande ou item non trouvé",
-            )
-        raise HTTPException(
-            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Une erreur serveur est survenue lors de l'ajustement",
         )
