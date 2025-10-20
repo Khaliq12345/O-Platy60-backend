@@ -1,26 +1,45 @@
 from fastapi import APIRouter, HTTPException, Depends, Path, Query
+from typing import List
 from src.services.supabase_services.ingredient_service import IngredientService
+from src.schemas.ingredients_schema import Ingredient
+from pydantic import BaseModel
+from datetime import datetime
+from typing import Optional
 
 router = APIRouter(prefix="/api/v1/ingredients", tags=["Ingredients"])
 
 
+# Schema pour la création (pas tous les champs obligatoires)
+class IngredientCreate(BaseModel):
+    sku: str
+    name: str
+    category: Optional[str]
+    current_stock_level: float
+    unit: Optional[str]
+    min_stock_level: float
+    storage_location: Optional[str]
+    last_received: Optional[datetime]
+    unit_cost: float
+    expire_at: Optional[datetime]
+
+
 # GET /ingredients
-@router.get("/")
+@router.get("/", response_model=List[Ingredient])
 def get_ingredients(
     skip: int = Query(0, ge=0),
-    limit: int = Query(100, ge=1),
+    limit: int = Query(100, ge=1, le=500),
     service: IngredientService = Depends(IngredientService),
 ):
-    """Liste des ingrédients avec delete=False et pagination"""
+    """Liste des ingrédients avec delete=False et pagination Supabase"""
     try:
-        ingredients = service.get_ingredients()
-        return ingredients[skip : skip + limit]
+        ingredients = service.get_ingredients(skip=skip, limit=limit)
+        return ingredients
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Server Error - {e}")
 
 
 # GET /ingredients/{sku}
-@router.get("/{sku}")
+@router.get("/{sku}", response_model=Ingredient)
 def get_ingredient(
     sku: str = Path(...),
     service: IngredientService = Depends(IngredientService),
@@ -36,28 +55,44 @@ def get_ingredient(
 
 
 # POST /ingredients
-@router.post("/")
+@router.post("/", response_model=Ingredient)
 def create_ingredient(
-    ingredient_data: dict,
+    ingredient_data: IngredientCreate,
     service: IngredientService = Depends(IngredientService),
 ):
     """Créer un nouvel ingrédient"""
     try:
-        return service.create_ingredient(ingredient_data)
+        # Préparer les données pour Supabase
+        data = ingredient_data.dict()
+        data["last_updated"] = datetime.utcnow()
+        data["value"] = data["current_stock_level"] * data["unit_cost"]
+
+        # Sérialiser les dates si nécessaire (last_received, expire_at)
+        for key in ["last_received", "expire_at", "last_updated"]:
+            if key in data and isinstance(data[key], datetime):
+                data[key] = data[key].isoformat()
+
+        created = service.create_ingredient(data)
+
+        if not created:
+            raise HTTPException(status_code=500, detail="Failed to create ingredient")
+
+        # Retourner un objet validé par Pydantic
+        return Ingredient(**created[0])
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Server Error - {e}")
 
 
 # PUT /ingredients/{sku}
-@router.put("/{sku}")
+@router.put("/{sku}", response_model=Ingredient)
 def update_ingredient(
     sku: str = Path(...),
-    ingredient_data: dict = ...,
+    ingredient_data: IngredientCreate = ...,
     service: IngredientService = Depends(IngredientService),
 ):
     """Mettre à jour un ingrédient"""
     try:
-        updated = service.update_ingredient(sku, ingredient_data)
+        updated = service.update_ingredient(sku, ingredient_data.dict())
         if not updated:
             raise HTTPException(status_code=404, detail="Ingredient not found")
         return updated
@@ -66,7 +101,7 @@ def update_ingredient(
 
 
 # DELETE /ingredients/{sku}
-@router.delete("/{sku}")
+@router.delete("/{sku}", response_model=Ingredient)
 def delete_ingredient(
     sku: str = Path(...),
     service: IngredientService = Depends(IngredientService),
@@ -82,18 +117,19 @@ def delete_ingredient(
 
 
 # POST /ingredients/{sku}/adjust
-@router.post("/{sku}/adjust")
+class StockAdjustment(BaseModel):
+    quantity: float
+
+
+@router.post("/{sku}/adjust", response_model=Ingredient)
 def adjust_stock(
     sku: str = Path(...),
-    adjustment: dict = ...,
+    adjustment: StockAdjustment = ...,
     service: IngredientService = Depends(IngredientService),
 ):
-    """Ajustement rapide du stock (quantity dans adjustment dict)"""
+    """Ajustement rapide du stock"""
     try:
-        quantity = adjustment.get("quantity")
-        if quantity is None:
-            raise HTTPException(status_code=400, detail="Missing 'quantity'")
-        adjusted = service.adjust_stock(sku, quantity)
+        adjusted = service.adjust_stock(sku, adjustment.quantity)
         if not adjusted:
             raise HTTPException(status_code=404, detail="Ingredient not found")
         return adjusted

@@ -14,9 +14,15 @@ class IngredientService(SupabaseService):
                 data[key] = data[key].isoformat()
         return data
 
-    def get_ingredients(self):
+    def get_ingredients(self, skip: int = 0, limit: int = 100):
+        """Récupère les ingrédients avec delete=False et pagination Supabase"""
+        end = skip + limit - 1  # Supabase inclut l'index de fin
         result = (
-            self.client.table("ingredients").select("*").eq("delete", False).execute()
+            self.client.table("ingredients")
+            .select("*")
+            .eq("delete", False)
+            .range(skip, end)
+            .execute()
         )
         return result.data
 
