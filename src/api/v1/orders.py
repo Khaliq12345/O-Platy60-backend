@@ -1,7 +1,8 @@
 from enum import Enum
-from fastapi import APIRouter, HTTPException, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi import status as http_status
 from src.schemas import order_schema
+from src.api.dependencies import get_orders_service, orders_depends
 from src.services.supabase_services.order_service import OrdersService
 
 
@@ -16,34 +17,22 @@ class OrderStatusEnum(str, Enum):
 router = APIRouter(prefix="/api/v1/orders", tags=["Orders"])
 
 
-def get_orders_service() -> OrdersService:
-    # Dependency pour obtenir une instance du service Orders
-    return OrdersService()
-
-
 @router.get("/", response_model=order_schema.OrderListResponse)
 def get_orders(
-    status: OrderStatusEnum | None = Query(None, description="Filtrer par statut"),  # type: ignore
-    ingredient_id: str | None = Query(None, description="Filtrer par ingredient"),  # type: ignore
-    page: int = Query(1, ge=1, description="Numéro de page"),  # type: ignore
-    limit: int = Query(10, ge=1, le=100, description="Nombre d'éléments par page"),  # type: ignore
-    orders_service: OrdersService = Depends(get_orders_service),  # type: ignore
+    status: OrderStatusEnum | None = Query(None, description="Filtrer par statut"),
+    ingredient_id: str | None = Query(None, description="Filtrer par ingredient"),
+    page: int = Query(1, ge=1, description="Numéro de page"),
+    limit: int = Query(10, ge=1, le=100, description="Nombre d'éléments par page"),
+    orders_service: OrdersService = Depends(get_orders_service),
 ):
     # Récupère la liste des commandes avec filtres et pagination.
-
     try:
-        # Validation des valeurs de filtres
-        valid_status = orders_service._validate_filter_values(
-            status.value if status else None
-        )
-
-        filters = order_schema.OrderFilter(
-            status=valid_status,  # type: ignore
+        return orders_service.get_orders(
+            status=status.value if status else None,
             ingredient_id=ingredient_id,
             page=page,
-            limit=limit,
+            limit=limit
         )
-        return orders_service.get_orders(filters)
     except ValueError as e:
         raise HTTPException(
             status_code=http_status.HTTP_400_BAD_REQUEST,
@@ -56,14 +45,10 @@ def get_orders(
         )
 
 
-@router.post(
-    "/",
-    response_model=order_schema.OrderWithIngredientResponse,
-    status_code=http_status.HTTP_201_CREATED,
-)
+@router.post("/", response_model=order_schema.ORDER, status_code=http_status.HTTP_201_CREATED)
 def create_order(
-    order_data: order_schema.OrderCreate,
-    orders_service: OrdersService = Depends(get_orders_service),  # type: ignore
+    order_data: dict,
+    orders_service: OrdersService = Depends(get_orders_service),
 ):
     # Crée une nouvelle commande.
     try:
@@ -80,21 +65,7 @@ def create_order(
         )
 
 
-@router.get("/ingredients", response_model=list[order_schema.IngredientResponse])
-def get_ingredients(
-    orders_service: OrdersService = Depends(get_orders_service),  # type: ignore
-):
-    # Récupère la liste des ingrédients disponibles
-    try:
-        return orders_service.get_ingredients()
-    except Exception as e:
-        raise HTTPException(
-            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Erreur lors de la récupération des ingrédients",
-        )
-
-
-@router.get("/{order_id}", response_model=order_schema.OrderWithIngredientResponse)
+@router.get("/{order_id}", response_model=order_schema.ORDER)
 def get_order(
     order_id: int,
     orders_service: OrdersService = Depends(get_orders_service),  # type: ignore
@@ -115,11 +86,11 @@ def get_order(
         )
 
 
-@router.put("/{order_id}", response_model=order_schema.OrderWithIngredientResponse)
+@router.put("/{order_id}", response_model=order_schema.ORDER)
 def update_order(
     order_id: int,
-    update_data: order_schema.OrderUpdate,
-    orders_service: OrdersService = Depends(get_orders_service),  # type: ignore
+    update_data: dict,
+    orders_service: OrdersService = Depends(get_orders_service),
 ):
     # Met à jour une commande existante.
     try:
@@ -136,7 +107,7 @@ def update_order(
         )
 
 
-@router.delete("/{order_id}", status_code=http_status.HTTP_204_NO_CONTENT)
+@router.delete("/{order_id}", status_code=http_status.HTTP_204_NO_CONTENT, response_model=None)
 def delete_order(
     order_id: int,
     orders_service: OrdersService = Depends(get_orders_service),  # type: ignore
@@ -157,13 +128,11 @@ def delete_order(
         )
 
 
-@router.post(
-    "/{order_id}/adjust", response_model=order_schema.OrderWithIngredientResponse
-)
+@router.post("/{order_id}/adjust", response_model=order_schema.ORDER)
 def adjust_order_stock(
     order_id: int,
-    adjustments: order_schema.StockAdjustmentRequest,
-    orders_service: OrdersService = Depends(get_orders_service),  # type: ignore
+    adjustments: dict,
+    orders_service: OrdersService = Depends(get_orders_service),
 ):
     # Ajustement rapide du stock d'une commande.
 
