@@ -1,5 +1,5 @@
 from fastapi import Depends
-from src.services.supabase_service import SupabaseService
+from src.services.supabase_services.supabase_service import SupabaseService
 
 
 # Dependency to get the Supabase service
