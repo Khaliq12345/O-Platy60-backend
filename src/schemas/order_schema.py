@@ -10,7 +10,7 @@ class OrderBase(BaseModel):
     unit_price_ordered: float = Field(..., ge=0)
     unit_price_received: Optional[float] = Field(None, ge=0)
     notes: Optional[str] = None
-    status: Literal['pending', 'confirmed', 'completed', 'cancelled'] = 'pending'
+    status: Literal["pending", "confirmed", "completed", "cancelled"] = "pending"
     value_ordered: float = Field(..., ge=0)
     value_received: Optional[float] = Field(None, ge=0)
 
@@ -26,7 +26,7 @@ class OrderUpdate(BaseModel):
     unit_price_ordered: Optional[float] = Field(None, ge=0)
     unit_price_received: Optional[float] = Field(None, ge=0)
     notes: Optional[str] = None
-    status: Optional[Literal['pending', 'confirmed', 'completed', 'cancelled']] = None
+    status: Optional[Literal["pending", "confirmed", "completed", "cancelled"]] = None
     value_ordered: Optional[float] = Field(None, ge=0)
     value_received: Optional[float] = Field(None, ge=0)
 
