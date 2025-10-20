@@ -1,20 +1,16 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, HTTPException
 from supabase import AuthInvalidCredentialsError
 from src.schemas import auth_schema
 from src.services.supabase_service import SupabaseService
+from src.api.dependencies import supabase_depends
 
 router = APIRouter(prefix="/api/v1/auth", tags=["AUTH"])
-
-
-# Dependency to get the Supabase service
-def get_supabase_service():
-    return SupabaseService()
 
 
 @router.post("/login", response_model=auth_schema.Session)
 def login(
     credentials: auth_schema.Login,
-    supabase: SupabaseService = Depends(get_supabase_service),
+    supabase: SupabaseService = supabase_depends,
 ):
     """Signs in a user."""
     try:
@@ -28,7 +24,7 @@ def login(
 @router.post("/refresh", response_model=auth_schema.Session)
 def refresh(
     token: auth_schema.Token,
-    supabase: SupabaseService = Depends(get_supabase_service),
+    supabase: SupabaseService = supabase_depends,
 ):
     """Refreshes a user session."""
     try:
@@ -40,9 +36,7 @@ def refresh(
 
 
 @router.post("/logout")
-def logout(
-    token: auth_schema.Token, supabase: SupabaseService = Depends(get_supabase_service)
-):
+def logout(token: auth_schema.Token, supabase: SupabaseService = supabase_depends):
     """Signs out a user."""
     try:
         return supabase.logout(token)
