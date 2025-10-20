@@ -4,7 +4,7 @@ from fastapi import status as http_status
 from src.schemas import order_schema
 from src.api.dependencies import get_orders_service, orders_depends
 from src.services.supabase_services.order_service import OrdersService
-from typing import Any 
+from typing import Any
 
 
 # Définir les énums
@@ -32,9 +32,9 @@ def get_orders(
             status=status.value if status else None,
             ingredient_id=ingredient_id,
             page=page,
-            limit=limit
+            limit=limit,
         )
-        
+
         return result
     except ValueError as e:
         raise HTTPException(
@@ -48,7 +48,9 @@ def get_orders(
         )
 
 
-@router.post("/", response_model=order_schema.ORDER, status_code=http_status.HTTP_201_CREATED)
+@router.post(
+    "/", response_model=order_schema.ORDER, status_code=http_status.HTTP_201_CREATED
+)
 def create_order(
     order_data: dict[str, Any],
     orders_service: OrdersService = Depends(get_orders_service),
@@ -110,7 +112,9 @@ def update_order(
         )
 
 
-@router.delete("/{order_id}", status_code=http_status.HTTP_204_NO_CONTENT, response_model=None)
+@router.delete(
+    "/{order_id}", status_code=http_status.HTTP_204_NO_CONTENT, response_model=None
+)
 def delete_order(
     order_id: int,
     orders_service: OrdersService = Depends(get_orders_service),  # type: ignore

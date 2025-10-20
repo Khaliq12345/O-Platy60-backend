@@ -14,32 +14,38 @@ class OrdersService(SupabaseService):
         quantity_ordered = order_data.get("quantity_ordered")
         unit_price_ordered = order_data.get("unit_price_ordered")
         value_ordered = order_data.get("value_ordered")
-        
+
         # Vérifier que la quantité commandée est positive
         if quantity_ordered is not None and quantity_ordered <= 0:
             raise ValueError("La quantité commandée doit être positive")
-        
+
         # Vérifier que le prix unitaire est positif
         if unit_price_ordered is not None and unit_price_ordered < 0:
             raise ValueError("Le prix unitaire commandé ne peut pas être négatif")
-        
+
         # Vérifier que la valeur commandée est cohérente
         if value_ordered is not None and value_ordered < 0:
             raise ValueError("La valeur commandée ne peut pas être négative")
-        
+
         # Vérifier la cohérence entre quantité, prix unitaire et valeur
         # code modifié pour corriger l"erreur : Operator "*" not supported for "None
-        if all([quantity_ordered is not None, unit_price_ordered is not None, value_ordered is not None]):
+        if all(
+            [
+                quantity_ordered is not None,
+                unit_price_ordered is not None,
+                value_ordered is not None,
+            ]
+        ):
             # À ce stade, on sait que les valeurs ne sont pas None
             assert quantity_ordered is not None
             assert unit_price_ordered is not None
             assert value_ordered is not None
-            
+
             expected_value = quantity_ordered * unit_price_ordered
-            if abs(value_ordered - expected_value) > 0.01:  # Tolérance pour les arrondis
-                raise ValueError(
-                    "La valeur commandée ne correspond pas à la valeur"
-                )
+            if (
+                abs(value_ordered - expected_value) > 0.01
+            ):  # Tolérance pour les arrondis
+                raise ValueError("La valeur commandée ne correspond pas à la valeur")
 
     def get_orders(
         self,
@@ -73,7 +79,7 @@ class OrdersService(SupabaseService):
             # Vérification de la réponse
             if not response:
                 raise Exception("Aucune réponse de la base de données")
-                
+
             if isinstance(response, str):
                 raise Exception(f"Erreur de requête: {response}")
 
@@ -91,7 +97,7 @@ class OrdersService(SupabaseService):
                     "limit": limit,
                     "has_next": offset + limit < total,
                     "has_prev": page > 1,
-                }
+                },
             }
         except Exception as e:
             raise Exception(f"Erreur lors de la récupération des commandes: {str(e)}")
@@ -109,14 +115,12 @@ class OrdersService(SupabaseService):
             order_dict.update({"created_at": now, "delete": False})
 
             # Insertion de la commande
-            order_response = (
-                self.client.table("orders").insert(order_dict).execute()
-            )
+            order_response = self.client.table("orders").insert(order_dict).execute()
 
             # Vérification que la réponse a l'attribut data
             if not order_response:
                 raise Exception("Aucune réponse de la base de données")
-                
+
             if isinstance(order_response, str):
                 raise Exception(f"Erreur de requête: {order_response}")
 
@@ -142,21 +146,25 @@ class OrdersService(SupabaseService):
                 .select("*, ingredients(*)")
                 .eq("id", order_id)
                 .eq("delete", False)
-                .single()  
+                .single()
                 .execute()
             )
-            
+
             # Vérification que response.data est bien un dict
             if not response.data:
                 raise Exception("Commande non trouvée")
-            
+
             if not isinstance(response.data, dict):
                 raise Exception("Format de réponse invalide")
-            
+
             return response.data
-            
+
         except Exception as e:
-            if "0 rows" in str(e) or "not found" in str(e).lower() or "non trouvée" in str(e):
+            if (
+                "0 rows" in str(e)
+                or "not found" in str(e).lower()
+                or "non trouvée" in str(e)
+            ):
                 raise Exception("Commande non trouvée")
             raise Exception(f"Erreur lors de la récupération de la commande: {str(e)}")
 
@@ -182,7 +190,7 @@ class OrdersService(SupabaseService):
 
                 if not response:
                     raise Exception("Aucune réponse de la base de données")
-                    
+
                 if isinstance(response, str):
                     raise Exception(f"Erreur de requête: {response}")
 
