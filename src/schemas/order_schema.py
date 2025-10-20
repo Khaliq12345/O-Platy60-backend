@@ -80,10 +80,10 @@ class OrderFilter(BaseModel):
 
 
 class IngredientBase(BaseModel):
+    sku: str  
     name: str
     category: Optional[str] = None
     current_stock_level: float = Field(0, ge=0)
-    sku: Optional[str] = None
     unit: Optional[str] = None
     status: Optional[str] = None
     min_stock_level: float = Field(0, ge=0)
@@ -98,10 +98,10 @@ class IngredientCreate(IngredientBase):
 
 
 class IngredientUpdate(BaseModel):
+    # SKU ne peut pas être modifié (clé primaire)
     name: Optional[str] = None
     category: Optional[str] = None
     current_stock_level: Optional[float] = Field(None, ge=0)
-    sku: Optional[str] = None
     unit: Optional[str] = None
     status: Optional[str] = None
     min_stock_level: Optional[float] = Field(None, ge=0)
