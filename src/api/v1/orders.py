@@ -1,5 +1,5 @@
 import json
-from typing import Any, Optional
+from typing import Any
 from fastapi import APIRouter, HTTPException
 from src.schemas import order_schema
 from src.schemas.order_schema import OrderStatusEnum

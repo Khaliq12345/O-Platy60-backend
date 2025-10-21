@@ -10,5 +10,6 @@ def get_supabase_service():
 
 
 supabase_depends = Depends(get_supabase_service)
+
 order_depends = Depends(OrdersService)
 ingredient_depends = Depends(IngredientService)
