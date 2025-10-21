@@ -62,6 +62,7 @@ class IngredientService(SupabaseService):
         ingredient = self.get_ingredient(sku)
         if not ingredient:
             return None
+
         now_date = datetime.now().isoformat()
         new_stock = ingredient["current_stock_level"] + quantity
         data = {
