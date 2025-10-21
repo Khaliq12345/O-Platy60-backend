@@ -7,17 +7,42 @@ class IngredientService(SupabaseService):
     def __init__(self) -> None:
         super().__init__()
 
-    def get_ingredients(self, skip: int = 0, limit: int = 100):
-        """Récupère les ingrédients avec delete=False et pagination Supabase"""
-        end = skip + limit - 1  # Supabase inclut l'index de fin
-        result = (
-            self.client.table("ingredients")
-            .select("*")
-            .eq("delete", False)
-            .range(skip, end)
-            .execute()
-        )
-        return result.data
+    def get_ingredients(
+        self,
+        page: int = 1,
+        limit: int = 10,
+    ) -> dict[str, Any] | None:
+        """Récupère la liste des ingrédients (delete=False) avec pagination"""
+        try:
+            # Calcul de l'offset pour la pagination
+            offset = (page - 1) * limit
+
+            # Construction de la requête
+            query = self.client.table("ingredients").select("*", count="exact")
+            query = query.eq("delete", False)
+
+            # Exécution avec pagination
+            response = query.range(offset, offset + limit - 1).execute()
+
+            if not response:
+                return None
+
+            total = response.count if response.count is not None else 0
+
+            return {
+                "data": response.data,
+                "pagination": {
+                    "total": total,
+                    "page": page,
+                    "limit": limit,
+                    "has_next": offset + limit < total,
+                    "has_prev": page > 1,
+                },
+            }
+
+        except Exception as e:
+            print(f"[get_ingredients] Error: {e}")
+            return None
 
     def get_ingredient(self, sku: str):
         result = (

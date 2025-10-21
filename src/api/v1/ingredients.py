@@ -1,34 +1,45 @@
 import json
-from fastapi import APIRouter, HTTPException, Depends, Path, Query
-from src.services.supabase_services.ingredient_service import IngredientService
+from fastapi import APIRouter, HTTPException, Depends, Path, status as http_status
 from src.schemas.ingredients_schema import Ingredient
-from pydantic import BaseModel
-from datetime import datetime
-from typing import Any, Dict, Optional
+from src.api.dependencies import ingredient_depends
+from src.services.supabase_services.ingredient_service import IngredientService
+from typing import Any, Dict, Optional, List
 
 router = APIRouter(prefix="/api/v1/ingredients", tags=["Ingredients"])
 
 
 # GET /ingredients
-@router.get("/", response_model=list[Ingredient])
+@router.get("/", response_model=dict)
 def get_ingredients(
-    skip: int,
-    limit: int,
-    service: IngredientService = Depends(IngredientService),
+    page: int = 1,
+    limit: int = 10,
+    ingredient_service: IngredientService = ingredient_depends,
 ):
-    """Liste des ingrédients avec delete=False et pagination Supabase"""
+    """
+    Récupère la liste des ingrédients (delete=False) avec pagination.
+    """
     try:
-        ingredients = service.get_ingredients(skip=skip, limit=limit)
-        return ingredients
+        result = ingredient_service.get_ingredients(page=page, limit=limit)
+        if not result:
+            raise HTTPException(
+                status_code=http_status.HTTP_404_NOT_FOUND,
+                detail="Aucun ingrédient trouvé.",
+            )
+        return result
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Server Error - {e}")
+        raise HTTPException(
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Une erreur serveur est survenue lors de la récupération des ingrédients - {e}",
+        )
 
 
 # GET /ingredients/{sku}
 @router.get("/{sku}", response_model=Ingredient)
 def get_ingredient(
     sku: str,
-    service: IngredientService = Depends(IngredientService),
+    service: IngredientService = ingredient_depends,
 ):
     """Détails d’un ingrédient"""
     try:
@@ -36,8 +47,8 @@ def get_ingredient(
         if not ingredient:
             raise HTTPException(status_code=404, detail="Ingredient not found")
         return ingredient
-    except HTTPException as e:
-        raise e
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Server Error - {e}")
 
@@ -46,20 +57,19 @@ def get_ingredient(
 @router.post("/", response_model=Optional[Ingredient])
 def create_ingredient(
     ingredient_data: Ingredient,
-    service: IngredientService = Depends(IngredientService),
+    service: IngredientService = ingredient_depends,
 ):
     """Créer un nouvel ingrédient"""
     try:
-        # Préparer les données pour Supabase
         data = json.loads(ingredient_data.model_dump_json())
         data["value"] = data["current_stock_level"] * data["unit_cost"]
         created = service.create_ingredient(data)
 
         if not created:
-            raise HTTPException(status_code=401, detail="Failed to create ingredient")
+            raise HTTPException(status_code=400, detail="Failed to create ingredient")
         return created
-    except HTTPException as e:
-        raise e
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Server Error - {e}")
 
@@ -69,7 +79,7 @@ def create_ingredient(
 def update_ingredient(
     sku: str,
     ingredient_data: Dict[str, Any],
-    service: IngredientService = Depends(IngredientService),
+    service: IngredientService = ingredient_depends,
 ):
     """Mettre à jour un ingrédient"""
     try:
@@ -77,8 +87,8 @@ def update_ingredient(
         if not updated:
             raise HTTPException(status_code=404, detail="Ingredient not found")
         return updated
-    except HTTPException as e:
-        raise e
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Server Error - {e}")
 
@@ -87,7 +97,7 @@ def update_ingredient(
 @router.delete("/{sku}", response_model=Optional[Ingredient])
 def delete_ingredient(
     sku: str,
-    service: IngredientService = Depends(IngredientService),
+    service: IngredientService = ingredient_depends,
 ):
     """Suppression logique (delete=True)"""
     try:
@@ -95,17 +105,18 @@ def delete_ingredient(
         if not deleted:
             raise HTTPException(status_code=404, detail="Ingredient not found")
         return deleted
-    except HTTPException as e:
-        raise e
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Server Error - {e}")
 
 
+# POST /ingredients/{sku}/adjust
 @router.post("/{sku}/adjust", response_model=Optional[Ingredient])
 def adjust_stock(
     sku: str,
     adjustment: float,
-    service: IngredientService = Depends(IngredientService),
+    service: IngredientService = ingredient_depends,
 ):
     """Ajustement rapide du stock"""
     try:
@@ -113,8 +124,8 @@ def adjust_stock(
         if not adjusted:
             raise HTTPException(status_code=404, detail="Ingredient not found")
         return adjusted
-    except HTTPException as e:
-        raise e
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Server Error - {e}")
 
@@ -123,17 +134,23 @@ def adjust_stock(
 @router.get("/{sku}/history")
 def get_history(
     sku: str = Path(...),
-    service: IngredientService = Depends(IngredientService),
+    service: IngredientService = ingredient_depends,
 ):
     """Historique des mouvements (placeholder)"""
-    return service.get_history(sku)
+    try:
+        return service.get_history(sku)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Server Error - {e}")
 
 
 # GET /ingredients/{sku}/batches
 @router.get("/{sku}/batches")
 def get_batches(
     sku: str = Path(...),
-    service: IngredientService = Depends(IngredientService),
+    service: IngredientService = ingredient_depends,
 ):
     """Lots groupés par date d’expiration (placeholder)"""
-    return service.get_batches(sku)
+    try:
+        return service.get_batches(sku)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Server Error - {e}")
