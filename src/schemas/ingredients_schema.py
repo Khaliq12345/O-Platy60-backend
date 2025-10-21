@@ -1,20 +1,19 @@
 from pydantic import BaseModel
-from typing import Optional
 from datetime import datetime
 
 
 class Ingredient(BaseModel):
     sku: str
     name: str
-    category: Optional[str]
-    current_stock_level: float
-    unit: Optional[str]
-    status: Optional[str]
-    min_stock_level: float
-    storage_location: Optional[str]
-    last_received: Optional[datetime]
-    last_updated: datetime
-    unit_cost: float
-    expire_at: Optional[datetime]
-    delete: bool
-    value: float
+    category: str | None = None
+    current_stock_level: float | None = 0
+    unit: str | None = None
+    status: str | None = None
+    min_stock_level: float | None = 0
+    storage_location: str | None = None
+    last_received: datetime | None = None
+    last_updated: datetime | None = None
+    unit_cost: float | None = 0
+    expire_at: datetime | None = None
+    delete: bool | None = False
+    value: float | None = 0
