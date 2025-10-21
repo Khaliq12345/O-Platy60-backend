@@ -2,7 +2,7 @@
 
 from src.services.supabase_services.supabase_service import SupabaseService
 from typing import Any
-from datetime import date, timedelta
+from datetime import date
 
 
 class OrdersService(SupabaseService):
@@ -13,10 +13,10 @@ class OrdersService(SupabaseService):
         self,
         status: str | None = None,
         ingredient_id: str | None = None,
-        created_from: date | None = None,
-        created_to: date | None = None,
-        completed_from: date | None = None,
-        completed_to: date | None = None,
+        created_from: str | None = None,
+        created_to: str | None = None,
+        completed_from: str | None = None,
+        completed_to: str | None = None,
         page: int = 1,
         limit: int = 10,
     ) -> dict[str, Any] | None:
@@ -28,28 +28,16 @@ class OrdersService(SupabaseService):
             query = query.eq("status", status)
         if ingredient_id:
             query = query.eq("ingredient_id", ingredient_id)
-        # Filtres sur dates de création - conversion des objets date en timestamps
+        # Filtres sur dates de création
         if created_from:
-            # Convertir la date en début de journée
-            created_from_str = f"{created_from.isoformat()}T00:00:00Z"
-            query = query.gte("created_at", created_from_str)
+            query = query.gte("created_at", created_from)
         if created_to:
-            # Convertir la date en début du jour suivant pour inclure toute la journée
-            next_day = created_to + timedelta(days=1)
-            created_to_str = f"{next_day.isoformat()}T00:00:00Z"
-            query = query.lt("created_at", created_to_str)  # < début du jour suivant
-        # Filtres sur dates de complétion - conversion des objets date en timestamps
+            query = query.lte("created_at", created_to)
+        # Filtres sur dates de complétion
         if completed_from:
-            # Convertir la date en début de journée (00:00:00Z)
-            completed_from_str = f"{completed_from.isoformat()}T00:00:00Z"
-            query = query.gte("completed_at", completed_from_str)
+            query = query.gte("completed_at", completed_from)
         if completed_to:
-            # Convertir la date en début du jour suivant pour inclure toute la journée
-            next_day = completed_to + timedelta(days=1)
-            completed_to_str = f"{next_day.isoformat()}T00:00:00Z"
-            query = query.lt(
-                "completed_at", completed_to_str
-            )  # < début du jour suivant
+            query = query.lte("completed_at", completed_to)
 
         # Calcul de l'offset pour la pagination
         offset = (page - 1) * limit

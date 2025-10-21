@@ -1,5 +1,6 @@
 import json
 from datetime import date, datetime
+from dateparser import parse as parse_date
 from typing import Any
 from fastapi import APIRouter, HTTPException
 from src.schemas import order_schema
@@ -17,14 +18,31 @@ def get_orders(
     limit: int = 20,
     status: OrderStatusEnum | None = None,
     ingredient_id: str | None = None,
-    created_from: date | None = None,
-    created_to: date | None = None,
-    completed_from: date | None = None,
-    completed_to: date | None = None,
+    created_at: str | None = None,
+    completed_at: str | None = None,
     orders_service: OrdersService = order_depends,
 ):
-    # Récupère la liste des commandes avec filtres et pagination.
+    # Récupère la liste des commandes avec filtres et pagination
+
     try:
+        # Interprétation des dates texte -> ISO format
+        created_from: str | None = None
+        created_to: str | None = None
+        completed_from: str | None = None
+        completed_to: str | None = None
+
+        if created_at:
+            dt = parse_date(created_at)
+            if dt:
+                created_from = dt.isoformat()
+                created_to = datetime.now().isoformat()
+
+        if completed_at:
+            dtc = parse_date(completed_at)
+            if dtc:
+                completed_from = dtc.isoformat()
+                completed_to = datetime.now().isoformat()
+
         result = orders_service.get_orders(
             status=status.value if status else None,
             ingredient_id=ingredient_id,
