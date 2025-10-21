@@ -1,4 +1,5 @@
 import json
+from datetime import date, datetime
 from typing import Any
 from fastapi import APIRouter, HTTPException
 from src.schemas import order_schema
@@ -16,6 +17,10 @@ def get_orders(
     limit: int = 20,
     status: OrderStatusEnum | None = None,
     ingredient_id: str | None = None,
+    created_from: date | None = None,
+    created_to: date | None = None,
+    completed_from: date | None = None,
+    completed_to: date | None = None,
     orders_service: OrdersService = order_depends,
 ):
     # Récupère la liste des commandes avec filtres et pagination.
@@ -23,6 +28,10 @@ def get_orders(
         result = orders_service.get_orders(
             status=status.value if status else None,
             ingredient_id=ingredient_id,
+            created_from=created_from,
+            created_to=created_to,
+            completed_from=completed_from,
+            completed_to=completed_to,
             page=page,
             limit=limit,
         )
