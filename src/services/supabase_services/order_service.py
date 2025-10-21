@@ -1,7 +1,7 @@
 # order_service.py
 
 from src.services.supabase_services.supabase_service import SupabaseService
-from typing import Any, Optional
+from typing import Any
 
 
 class OrdersService(SupabaseService):
@@ -14,7 +14,7 @@ class OrdersService(SupabaseService):
         ingredient_id: str | None = None,
         page: int = 1,
         limit: int = 10,
-    ) -> Optional[dict[str, Any]]:
+    ) -> dict[str, Any] | None:
         """Récupère la liste des commandes avec filtres et pagination"""
         query = self.client.table("orders").select("*, ingredients(*)", count="exact")
         # Application des filtres
@@ -46,7 +46,7 @@ class OrdersService(SupabaseService):
             },
         }
 
-    def create_order(self, order_data: dict[str, Any]) -> Optional[dict[str, Any]]:
+    def create_order(self, order_data: dict[str, Any]) -> dict[str, Any] | None:
         """Crée une nouvelle commande d'ingrédient"""
         # Insertion de la commande
         order_response = self.client.table("orders").insert(order_data).execute()
@@ -55,7 +55,7 @@ class OrdersService(SupabaseService):
         if result:
             return result[0]
 
-    def get_order_by_id(self, order_id: int) -> Optional[dict[str, Any]]:
+    def get_order_by_id(self, order_id: int) -> dict[str, Any] | None:
         """Récupère une commande par son ID avec l'ingrédient"""
         response = (
             self.client.table("orders")
@@ -70,7 +70,7 @@ class OrdersService(SupabaseService):
 
     def update_order(
         self, order_id: int, update_data: dict[str, Any]
-    ) -> Optional[dict[str, Any]]:
+    ) -> dict[str, Any] | None:
         """Met à jour une commande existante"""
         update_dict = {}
         for k, v in update_data.items():
@@ -87,7 +87,7 @@ class OrdersService(SupabaseService):
             if response.data:
                 return response.data[0]
 
-    def soft_delete_order(self, order_id: int) -> Optional[dict[str, str]]:
+    def soft_delete_order(self, order_id: int) -> dict[str, str] | None:
         """Effectue une suppression logique de la commande"""
         # Suppression logique
         result = (
