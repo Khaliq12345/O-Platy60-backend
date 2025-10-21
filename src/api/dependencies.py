@@ -14,4 +14,4 @@ def get_orders_service():
 
 
 supabase_depends = Depends(get_supabase_service)
-orders_depends = Depends(get_orders_service)
+order_depends = Depends(OrdersService)

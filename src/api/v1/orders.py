@@ -1,30 +1,22 @@
-from enum import Enum
-from fastapi import APIRouter, Depends, HTTPException, Query
-from fastapi import status as http_status
+import json
+from typing import Any, Optional
+from fastapi import APIRouter, HTTPException
 from src.schemas import order_schema
-from src.api.dependencies import get_orders_service, orders_depends
+from src.schemas.order_schema import OrderStatusEnum
 from src.services.supabase_services.order_service import OrdersService
-from typing import Any
-
-
-# Définir les énums
-class OrderStatusEnum(str, Enum):
-    PENDING = "pending"
-    CONFIRMED = "confirmed"
-    COMPLETED = "completed"
-    CANCELLED = "cancelled"
-
+from src.api.dependencies import order_depends
+from fastapi import status as http_status
 
 router = APIRouter(prefix="/api/v1/orders", tags=["Orders"])
 
 
 @router.get("/")
 def get_orders(
-    status: OrderStatusEnum | None = Query(None, description="Filtrer par statut"),
-    ingredient_id: str | None = Query(None, description="Filtrer par ingredient"),
-    page: int = Query(1, ge=1, description="Numéro de page"),
-    limit: int = Query(10, ge=1, le=100, description="Nombre d'éléments par page"),
-    orders_service: OrdersService = Depends(get_orders_service),
+    page: int = 1,
+    limit: int = 20,
+    status: OrderStatusEnum | None = None,
+    ingredient_id: str | None = None,
+    orders_service: OrdersService = order_depends,
 ):
     # Récupère la liste des commandes avec filtres et pagination.
     try:
@@ -34,60 +26,62 @@ def get_orders(
             page=page,
             limit=limit,
         )
-
         return result
-    except ValueError as e:
-        raise HTTPException(
-            status_code=http_status.HTTP_400_BAD_REQUEST,
-            detail=f"Paramètre invalide: {str(e)}",
-        )
     except Exception as e:
         raise HTTPException(
             status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Une erreur serveur est survenue lors de la récupération des commandes",
+            detail=f"Une erreur serveur est survenue lors de la récupération des commandes - {e}",
         )
 
 
 @router.post(
-    "/", response_model=order_schema.ORDER, status_code=http_status.HTTP_201_CREATED
+    "/",
+    response_model=order_schema.ORDER,
+    status_code=http_status.HTTP_201_CREATED,
 )
 def create_order(
-    order_data: dict[str, Any],
-    orders_service: OrdersService = Depends(get_orders_service),
+    order_data: order_schema.ORDER,
+    orders_service: OrdersService = order_depends,
 ):
-    # Crée une nouvelle commande.
+    """Crée une nouvelle commande."""
     try:
-        return orders_service.create_order(order_data)
-    except ValueError as e:
-        raise HTTPException(
-            status_code=http_status.HTTP_400_BAD_REQUEST,
-            detail=f"Données invalides: {str(e)}",
-        )
+        order_dict = json.loads(order_data.model_dump_json())
+        order = orders_service.create_order(order_dict)
+        if not order:
+            raise HTTPException(
+                status_code=http_status.HTTP_404_NOT_FOUND,
+                detail="Commande non trouvée",
+            )
+        return order
+    except HTTPException as e:
+        raise e
     except Exception as e:
         raise HTTPException(
             status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Une erreur serveur est survenue lors de la création de la commande",
+            detail=f"Une erreur serveur est survenue lors de la création de la commande - {e}",
         )
 
 
 @router.get("/{order_id}", response_model=order_schema.ORDER)
 def get_order(
     order_id: int,
-    orders_service: OrdersService = Depends(get_orders_service),  # type: ignore
+    orders_service: OrdersService = order_depends,  # type: ignore
 ):
-    # Récupère les détails d'une commande par son ID.
-
+    """Récupère les détails d'une commande par son ID"""
     try:
-        return orders_service.get_order_by_id(order_id)
-    except Exception as e:
-        if "non trouvée" in str(e):
+        order = orders_service.get_order_by_id(order_id)
+        if not order:
             raise HTTPException(
                 status_code=http_status.HTTP_404_NOT_FOUND,
                 detail="Commande non trouvée",
             )
+        return order
+    except HTTPException as e:
+        raise e
+    except Exception as e:
         raise HTTPException(
             status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Une erreur serveur est survenue",
+            detail=f"Une erreur serveur est survenue - {e}",
         )
 
 
@@ -95,17 +89,20 @@ def get_order(
 def update_order(
     order_id: int,
     update_data: dict[str, Any],
-    orders_service: OrdersService = Depends(get_orders_service),
+    orders_service: OrdersService = order_depends,
 ):
-    # Met à jour une commande existante.
+    """Met à jour une commande existante."""
     try:
-        return orders_service.update_order(order_id, update_data)
-    except Exception as e:
-        if "non trouvée" in str(e):
+        order = orders_service.update_order(order_id, update_data)
+        if not order:
             raise HTTPException(
                 status_code=http_status.HTTP_404_NOT_FOUND,
                 detail="Commande non trouvée",
             )
+        return order
+    except HTTPException as e:
+        raise e
+    except Exception as e:
         raise HTTPException(
             status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Erreur: {str(e)}",
@@ -113,23 +110,26 @@ def update_order(
 
 
 @router.delete(
-    "/{order_id}", status_code=http_status.HTTP_204_NO_CONTENT, response_model=None
+    "/{order_id}",
+    response_model=order_schema.ORDER | None,
 )
 def delete_order(
     order_id: int,
-    orders_service: OrdersService = Depends(get_orders_service),  # type: ignore
+    orders_service: OrdersService = order_depends,  # type: ignore
 ):
-    # Suppression logique d'une commande (soft delete).
-
+    """Suppression logique d'une commande (soft delete)"""
     try:
-        orders_service.soft_delete_order(order_id)
-    except Exception as e:
-        if "non trouvée" in str(e):
+        order = orders_service.soft_delete_order(order_id)
+        if not order:
             raise HTTPException(
                 status_code=http_status.HTTP_404_NOT_FOUND,
                 detail="Commande non trouvée",
             )
+        return order
+    except HTTPException as e:
+        raise e
+    except Exception as e:
         raise HTTPException(
             status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Une erreur serveur est survenue lors de la suppression",
+            detail=f"Une erreur serveur est survenue lors de la suppression - {e}",
         )
