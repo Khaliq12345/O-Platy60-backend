@@ -8,10 +8,5 @@ def get_supabase_service():
     return SupabaseService()
 
 
-# Dependency to get the Orders service
-def get_orders_service():
-    return OrdersService()
-
-
 supabase_depends = Depends(get_supabase_service)
 order_depends = Depends(OrdersService)
