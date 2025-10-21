@@ -1,5 +1,5 @@
 import json
-from fastapi import APIRouter, HTTPException, Depends, Path
+from fastapi import APIRouter, HTTPException, Depends, Path, status as http_status
 from src.schemas.ingredients_schema import Ingredient
 from src.api.dependencies import ingredient_depends
 from src.services.supabase_services.ingredient_service import IngredientService
@@ -9,17 +9,30 @@ router = APIRouter(prefix="/api/v1/ingredients", tags=["Ingredients"])
 
 
 # GET /ingredients
-@router.get("/", response_model=List[Ingredient])
+@router.get("/", response_model=dict)
 def get_ingredients(
-    skip: int = 0,
+    page: int = 1,
     limit: int = 10,
-    service: IngredientService = ingredient_depends,
+    ingredient_service: IngredientService = ingredient_depends,
 ):
-    """Liste des ingrédients avec delete=False et pagination Supabase"""
+    """
+    Récupère la liste des ingrédients (delete=False) avec pagination.
+    """
     try:
-        return service.get_ingredients(skip=skip, limit=limit)
+        result = ingredient_service.get_ingredients(page=page, limit=limit)
+        if not result:
+            raise HTTPException(
+                status_code=http_status.HTTP_404_NOT_FOUND,
+                detail="Aucun ingrédient trouvé.",
+            )
+        return result
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Server Error - {e}")
+        raise HTTPException(
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Une erreur serveur est survenue lors de la récupération des ingrédients - {e}",
+        )
 
 
 # GET /ingredients/{sku}
