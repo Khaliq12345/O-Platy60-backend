@@ -26,30 +26,16 @@ def get_orders(
 
     try:
         # Interprétation des dates texte -> ISO format
-        created_from: str | None = None
-        created_to: str | None = None
-        completed_from: str | None = None
-        completed_to: str | None = None
-
-        if created_at:
-            dt = parse_date(created_at)
-            if dt:
-                created_from = dt.isoformat()
-                created_to = datetime.now().isoformat()
-
-        if completed_at:
-            dtc = parse_date(completed_at)
-            if dtc:
-                completed_from = dtc.isoformat()
-                completed_to = datetime.now().isoformat()
+        created_at_node = parse_date(created_at) if created_at else None
+        completed_at_node = parse_date(completed_at) if completed_at else None
+        created_at = created_at_node.isoformat() if created_at_node else None
+        completed_at = completed_at_node.isoformat() if completed_at_node else None
 
         result = orders_service.get_orders(
             status=status.value if status else None,
             ingredient_id=ingredient_id,
-            created_from=created_from,
-            created_to=created_to,
-            completed_from=completed_from,
-            completed_to=completed_to,
+            created_at=created_at,
+            completed_at=completed_at,
             page=page,
             limit=limit,
         )

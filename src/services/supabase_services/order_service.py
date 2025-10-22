@@ -2,7 +2,6 @@
 
 from src.services.supabase_services.supabase_service import SupabaseService
 from typing import Any
-from datetime import date
 
 
 class OrdersService(SupabaseService):
@@ -13,10 +12,8 @@ class OrdersService(SupabaseService):
         self,
         status: str | None = None,
         ingredient_id: str | None = None,
-        created_from: str | None = None,
-        created_to: str | None = None,
-        completed_from: str | None = None,
-        completed_to: str | None = None,
+        created_at: str | None = None,
+        completed_at: str | None = None,
         page: int = 1,
         limit: int = 10,
     ) -> dict[str, Any] | None:
@@ -29,15 +26,10 @@ class OrdersService(SupabaseService):
         if ingredient_id:
             query = query.eq("ingredient_id", ingredient_id)
         # Filtres sur dates de création
-        if created_from:
-            query = query.gte("created_at", created_from)
-        if created_to:
-            query = query.lte("created_at", created_to)
-        # Filtres sur dates de complétion
-        if completed_from:
-            query = query.gte("completed_at", completed_from)
-        if completed_to:
-            query = query.lte("completed_at", completed_to)
+        if created_at:
+            query = query.gte("created_at", created_at)
+        if completed_at:
+            query = query.gte("completed_at", completed_at)
 
         # Calcul de l'offset pour la pagination
         offset = (page - 1) * limit
