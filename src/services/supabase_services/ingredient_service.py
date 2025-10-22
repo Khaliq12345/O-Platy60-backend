@@ -1,6 +1,7 @@
 from src.services.supabase_services.supabase_service import SupabaseService
-from datetime import date, datetime
+from datetime import datetime
 from typing import Any
+import json
 
 
 class IngredientService(SupabaseService):
@@ -11,23 +12,56 @@ class IngredientService(SupabaseService):
         self,
         page: int = 1,
         limit: int = 10,
+        search: str | None = None,
+        category: str | None = None,
+        status: str | None = None,
+        low_stock_only: bool | None = False,
     ) -> dict[str, Any] | None:
-        """Récupère la liste des ingrédients (delete=False) avec pagination"""
+        """Récupère la liste des ingrédients avec pagination et filtres dynamiques"""
         try:
-            # Calcul de l'offset pour la pagination
             offset = (page - 1) * limit
 
-            # Construction de la requête
+            # Base query
             query = self.client.table("ingredients").select("*", count="exact")
             query = query.eq("delete", False)
 
-            # Exécution avec pagination
+            # Filtre par catégorie
+            if category:
+                if category.startswith("{"):
+                    category = json.loads(category).get("value", "")
+                if category:
+                    query = query.eq("category", category)
+
+            # Filtre par statut
+            if status:
+                query = query.eq("status", status)
+
+            # Filtre low stock
+            if low_stock_only:
+                query = query.eq("status", "low")
+
+            # Recherche textuelle (name, sku)
+            if search:
+                search = search.lower().strip()
+                query = query.or_(f"name.ilike.%{search}%,sku.ilike.%{search}%")
+
+            print(
+                "[get_ingredients] Final query filters:",
+                {
+                    "search": search,
+                    "category": category,
+                    "status": status,
+                    "offset": offset,
+                },
+            )
+
+            # Pagination
             response = query.range(offset, offset + limit - 1).execute()
 
             if not response:
                 return None
 
-            total = response.count if response.count is not None else 0
+            total = response.count or 0
 
             return {
                 "data": response.data,
@@ -60,11 +94,7 @@ class IngredientService(SupabaseService):
             return result.data[0]
 
     def update_ingredient(self, sku: str, data: dict[str, Any]):
-        update_dict = {}
-        for k, v in data.items():
-            if v is not None:
-                update_dict[k] = v
-
+        update_dict = {k: v for k, v in data.items() if v is not None}
         update_dict["last_updated"] = datetime.now().isoformat()
         result = (
             self.client.table("ingredients")

@@ -13,13 +13,25 @@ router = APIRouter(prefix="/api/v1/ingredients", tags=["Ingredients"])
 def get_ingredients(
     page: int = 1,
     limit: int = 10,
+    search: str | None = None,
+    category: str | None = None,
+    status: str | None = None,
+    low_stock_only: bool | None = False,
     ingredient_service: IngredientService = ingredient_depends,
 ):
     """
-    Récupère la liste des ingrédients (delete=False) avec pagination.
+    Récupère la liste des ingrédients (delete=False) avec pagination et filtres optionnels.
     """
     try:
-        result = ingredient_service.get_ingredients(page=page, limit=limit)
+        result = ingredient_service.get_ingredients(
+            page=page,
+            limit=limit,
+            search=search,
+            category=category,
+            status=status,
+            low_stock_only=low_stock_only,
+        )
+
         if not result:
             raise HTTPException(
                 status_code=http_status.HTTP_404_NOT_FOUND,
