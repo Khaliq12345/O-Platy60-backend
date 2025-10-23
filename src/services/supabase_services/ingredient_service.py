@@ -1,7 +1,6 @@
 from src.services.supabase_services.supabase_service import SupabaseService
 from datetime import datetime
 from typing import Any
-import json
 
 
 class IngredientService(SupabaseService):
@@ -18,65 +17,47 @@ class IngredientService(SupabaseService):
         low_stock_only: bool | None = False,
     ) -> dict[str, Any] | None:
         """Récupère la liste des ingrédients avec pagination et filtres dynamiques"""
-        try:
-            offset = (page - 1) * limit
-
-            # Base query
-            query = self.client.table("ingredients").select("*", count="exact")
-            query = query.eq("delete", False)
-
-            # Filtre par catégorie
-            if category:
-                if category.startswith("{"):
-                    category = json.loads(category).get("value", "")
-                if category:
-                    query = query.eq("category", category)
-
-            # Filtre par statut
-            if status:
-                query = query.eq("status", status)
-
-            # Filtre low stock
-            if low_stock_only:
-                query = query.eq("status", "low")
-
-            # Recherche textuelle (name, sku)
-            if search:
-                search = search.lower().strip()
-                query = query.or_(f"name.ilike.%{search}%,sku.ilike.%{search}%")
-
-            print(
-                "[get_ingredients] Final query filters:",
-                {
-                    "search": search,
-                    "category": category,
-                    "status": status,
-                    "offset": offset,
-                },
-            )
-
-            # Pagination
-            response = query.range(offset, offset + limit - 1).execute()
-
-            if not response:
-                return None
-
-            total = response.count or 0
-
-            return {
-                "data": response.data,
-                "pagination": {
-                    "total": total,
-                    "page": page,
-                    "limit": limit,
-                    "has_next": offset + limit < total,
-                    "has_prev": page > 1,
-                },
-            }
-
-        except Exception as e:
-            print(f"[get_ingredients] Error: {e}")
+        offset = (page - 1) * limit
+        # Base query
+        query = self.client.table("ingredients").select("*", count="exact")
+        query = query.eq("delete", False)
+        # Filtre par catégorie
+        if category:
+            query = query.eq("category", category)
+        # Filtre par statut
+        if status:
+            query = query.eq("status", status)
+        # Filtre low stock
+        if low_stock_only:
+            query = query.eq("status", "low")
+        # Recherche textuelle (name, sku)
+        if search:
+            search = search.lower().strip()
+            query = query.or_(f"name.ilike.%{search}%,sku.ilike.%{search}%")
+        print(
+            "[get_ingredients] Final query filters:",
+            {
+                "search": search,
+                "category": category,
+                "status": status,
+                "offset": offset,
+            },
+        )
+        # Pagination
+        response = query.range(offset, offset + limit - 1).execute()
+        if not response:
             return None
+        total = response.count or 0
+        return {
+            "data": response.data,
+            "pagination": {
+                "total": total,
+                "page": page,
+                "limit": limit,
+                "has_next": offset + limit < total,
+                "has_prev": page > 1,
+            },
+        }
 
     def get_ingredient(self, sku: str):
         result = (

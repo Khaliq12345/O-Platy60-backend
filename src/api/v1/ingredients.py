@@ -1,9 +1,9 @@
 import json
-from fastapi import APIRouter, HTTPException, Depends, Path, status as http_status
+from fastapi import APIRouter, HTTPException, Path, status as http_status
 from src.schemas.ingredients_schema import Ingredient
 from src.api.dependencies import ingredient_depends
 from src.services.supabase_services.ingredient_service import IngredientService
-from typing import Any, Dict, Optional, List
+from typing import Any, Dict, Optional
 
 router = APIRouter(prefix="/api/v1/ingredients", tags=["Ingredients"])
 

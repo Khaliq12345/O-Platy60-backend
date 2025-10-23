@@ -1,5 +1,4 @@
 import json
-from datetime import date, datetime
 from dateparser import parse as parse_date
 from typing import Any
 from fastapi import APIRouter, HTTPException
@@ -22,8 +21,7 @@ def get_orders(
     completed_at: str | None = None,
     orders_service: OrdersService = order_depends,
 ):
-    # Récupère la liste des commandes avec filtres et pagination
-
+    """Récupère la liste des commandes avec filtres et pagination"""
     try:
         # Interprétation des dates texte -> ISO format
         created_at_node = parse_date(created_at) if created_at else None
