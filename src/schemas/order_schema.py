@@ -17,7 +17,7 @@ class ORDER(BaseModel):
     id: int | None = None
     created_at: str | None = None
     ingredient_id: str
-    ingredients: Ingredient
+    ingredients: Ingredient | None = None
     quantity_ordered: float | None = 0
     quantity_received: float | None = 0
     unit_price_ordered: float | None = 0
