@@ -1,5 +1,6 @@
 # order_service.py
 
+import datetime
 from src.services.supabase_services.supabase_service import SupabaseService
 from typing import Any
 
@@ -79,10 +80,8 @@ class OrdersService(SupabaseService):
         self, order_id: int, update_data: dict[str, Any]
     ) -> dict[str, Any] | None:
         """Met à jour une commande existante"""
-        update_dict = {}
-        for k, v in update_data.items():
-            if v is not None:
-                update_dict[k] = v
+        update_dict = {k: v for k, v in update_data.items() if v is not None}
+        update_dict["last_updated"] = datetime.now().isoformat()
 
         if update_dict:
             response = (
@@ -99,7 +98,7 @@ class OrdersService(SupabaseService):
         # Suppression logique
         result = (
             self.client.table("orders")
-            .update({"delete": True})
+            .update({"delete": True, "last_updated": datetime.now().isoformat()})
             .eq("id", order_id)
             .execute()
         )

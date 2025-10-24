@@ -32,7 +32,6 @@ class IngredientService(SupabaseService):
             query = query.eq("status", "low")
         # Recherche textuelle (name, sku)
         if search:
-            search = search.lower().strip()
             query = query.or_(f"name.ilike.%{search}%,sku.ilike.%{search}%")
         print(
             "[get_ingredients] Final query filters:",

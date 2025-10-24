@@ -27,4 +27,5 @@ class ORDER(BaseModel):
     value_ordered: float | None = 0
     value_received: float | None = 0
     completed_at: str | None = None
+    last_updated: str | None = None
     delete: bool | None = False
