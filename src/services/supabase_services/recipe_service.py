@@ -10,9 +10,9 @@ class RecipeService(SupabaseService):
 
     def get_recipes(
         self,
-        active: str | None = None,
-        category: str | None = None,
-        search_query: str | None = None,
+        active: bool | str,
+        category: str | None,
+        search_query: str | None,
         page: int = 1,
         limit: int = 10,
     ) -> dict[str, Any] | None:
@@ -20,10 +20,12 @@ class RecipeService(SupabaseService):
         query = self.client.table(self.recipe_table).select("*", count="exact")
         # Application des filtres
         query = query.eq("delete", False)
-        if active:
+        if active != "all":
             query = query.eq("active", active)
         if search_query:
-            query = query.or_(f"name.ilike.%{search_query}%")
+            query = query.ilike("name", f"%{search_query}%")
+        if (category) and (category != "all"):
+            query = query.eq("category", category)
 
         # Calcul de l'offset pour la pagination
         offset = (page - 1) * limit
@@ -31,7 +33,7 @@ class RecipeService(SupabaseService):
         response = query.range(offset, offset + limit - 1).execute()
 
         # Vérification de la réponse
-        if not response:
+        if not response.data:
             return None
 
         # On s'assure que total est un entier

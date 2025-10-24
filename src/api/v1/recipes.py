@@ -12,27 +12,27 @@ router = APIRouter(prefix="/api/v1/recipes", tags=["Recipes"])
 @router.get("/")
 def get_recipes(
     search_query: str | None = None,
-    active: bool = True,
+    active: bool | str = "all",
     category: str | None = None,
     page: int = 1,
     limit: int = 20,
     recipe_service: RecipeService = recipe_depends,
 ):
     """Récupère la liste des repats avec filtres et pagination"""
-    try:
-        result = recipe_service.get_recipes(
-            active=active,
-            search_query=search_query,
-            category=category,
-            page=page,
-            limit=limit,
-        )
-        return result
-    except Exception as e:
-        raise HTTPException(
-            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Une erreur serveur est survenue lors de la récupération des recipes - {e}",
-        )
+    # try:
+    result = recipe_service.get_recipes(
+        active=active,
+        search_query=search_query,
+        category=category,
+        page=page,
+        limit=limit,
+    )
+    return result
+    # except Exception as e:
+    #     raise HTTPException(
+    #         status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
+    #         detail=f"Une erreur serveur est survenue lors de la récupération des recipes - {e}",
+    #     )
 
 
 @router.get(

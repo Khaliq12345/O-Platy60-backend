@@ -2,6 +2,7 @@ from pydantic import BaseModel
 
 
 class Recipe(BaseModel):
+    id: int
     name: str
     category: str | None
     cost: float
