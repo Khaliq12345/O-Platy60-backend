@@ -103,7 +103,7 @@ class RecipeService(SupabaseService):
         """Récupère les ingredients d'un repat"""
         result = (
             self.client.table("recipes_ingredients")
-            .select("recipe_id, ingredients(name,sku)")
+            .select("recipe_id, ingredients(name,sku,unit,unit_cost)")
             .eq("recipe_id", recipe_id)
             .execute()
         )
@@ -112,5 +112,12 @@ class RecipeService(SupabaseService):
         ingredients = []
         for x in response:
             ingredient = x["ingredients"]
-            ingredients.append({"name": ingredient["name"], "sku": ingredient["sku"]})
+            ingredients.append(
+                {
+                    "name": ingredient["name"],
+                    "sku": ingredient["sku"],
+                    "unit": ingredient["unit"],
+                    "unit_cost": ingredient["unit_cost"],
+                }
+            )
         return {"recipe_id": recipe_id, "ingredients": ingredients}

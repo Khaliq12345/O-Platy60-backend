@@ -1,7 +1,4 @@
-from calendar import c
-from gettext import Catalog
 import json
-from dateparser import parse as parse_date
 from typing import Any, List
 from fastapi import APIRouter, HTTPException
 from src.schemas import recipe_schema
@@ -12,7 +9,7 @@ from src.services.supabase_services.recipe_service import RecipeService
 router = APIRouter(prefix="/api/v1/recipes", tags=["Recipes"])
 
 
-@router.get("/", response_model=List[recipe_schema.Recipe])
+@router.get("/")
 def get_recipes(
     search_query: str | None = None,
     active: bool = True,
