@@ -52,8 +52,9 @@ class RecipeService(SupabaseService):
     def create_recipe(self, recipe_data: dict) -> dict[str, Any] | None:
         """Crée une nouvelle Repat"""
         # Insertion de la commande
+        update_dict = {k: v for k, v in recipe_data.items() if v is not None}
         recipe_response = (
-            self.client.table(self.recipe_table).insert(recipe_data).execute()
+            self.client.table(self.recipe_table).insert(update_dict).execute()
         )
         # Récupération de la commande créée
         result = recipe_response.data

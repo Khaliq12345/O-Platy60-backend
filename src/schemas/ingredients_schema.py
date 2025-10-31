@@ -5,7 +5,7 @@ from datetime import datetime
 class Ingredient(BaseModel):
     sku: str
     name: str
-    created_at: str
+    created_at: str | None = None
     category: str | None = None
     current_stock_level: float | None = 0
     unit: str | None = None

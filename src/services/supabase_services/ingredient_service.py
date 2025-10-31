@@ -69,7 +69,8 @@ class IngredientService(SupabaseService):
         return result.data
 
     def create_ingredient(self, data: dict[str, Any]):
-        result = self.client.table("ingredients").insert(data).execute()
+        update_dict = {k: v for k, v in data.items() if v is not None}
+        result = self.client.table("ingredients").insert(update_dict).execute()
         if result.data:
             return result.data[0]
 
@@ -82,6 +83,15 @@ class IngredientService(SupabaseService):
             .eq("sku", sku)
             .execute()
         )
+        if result.data:
+            return result.data[0]
+
+    def adjust_ingredient(self, sku: str, quantity: int):
+        """AJouter au stock"""
+        result = self.client.rpc(
+            "add_quantity_to_ingredient",
+            {"p_product_sku": sku, "p_quantity_to_add": quantity},
+        ).execute()
         if result.data:
             return result.data[0]
 

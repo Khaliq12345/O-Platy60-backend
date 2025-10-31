@@ -1,11 +1,12 @@
 from pydantic import BaseModel
+from datetime import datetime
 
 
 class Recipe(BaseModel):
-    id: int
+    id: int | None = None
     name: str
-    category: str | None
+    category: str | None = None
     cost: float
-    active: bool = True
-    delete: bool = False
-    last_updated: str | None = None
+    active: bool | None = True
+    delete: bool | None = False
+    last_updated: datetime | None = None

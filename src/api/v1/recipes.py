@@ -19,20 +19,20 @@ def get_recipes(
     recipe_service: RecipeService = recipe_depends,
 ):
     """Récupère la liste des repats avec filtres et pagination"""
-    # try:
-    result = recipe_service.get_recipes(
-        active=active,
-        search_query=search_query,
-        category=category,
-        page=page,
-        limit=limit,
-    )
-    return result
-    # except Exception as e:
-    #     raise HTTPException(
-    #         status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
-    #         detail=f"Une erreur serveur est survenue lors de la récupération des recipes - {e}",
-    #     )
+    try:
+        result = recipe_service.get_recipes(
+            active=active,
+            search_query=search_query,
+            category=category,
+            page=page,
+            limit=limit,
+        )
+        return result
+    except Exception as e:
+        raise HTTPException(
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Une erreur serveur est survenue lors de la récupération des recipes - {e}",
+        )
 
 
 @router.get(
@@ -62,7 +62,7 @@ def get_recipe_ingredients(
 
 @router.post(
     "/",
-    response_model=recipe_schema.Recipe,
+    response_model=recipe_schema.Recipe | None,
     status_code=http_status.HTTP_201_CREATED,
 )
 def create_recipe(
@@ -72,6 +72,7 @@ def create_recipe(
     """Crée un nouvelle repat."""
     try:
         recipe_dict = json.loads(recipe_data.model_dump_json())
+        print(recipe_dict)
         recipe = recipes_service.create_recipe(recipe_dict)
         if not recipe:
             raise HTTPException(
