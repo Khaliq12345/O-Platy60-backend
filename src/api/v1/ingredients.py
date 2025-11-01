@@ -158,11 +158,28 @@ def get_history(
 # GET /ingredients/{sku}/batches
 @router.get("/{sku}/batches")
 def get_batches(
-    sku: str = Path(...),
+    sku: str,
     service: IngredientService = ingredient_depends,
 ):
     """Lots groupés par date d’expiration (placeholder)"""
     try:
         return service.get_batches(sku)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Server Error - {e}")
+
+
+# SEARCH INGREDIENTS
+@router.get("/search/{keyword}")
+def search_ingredients(
+    keyword: str,
+    service: IngredientService = ingredient_depends,
+):
+    """Search for Ingredients"""
+
+    try:
+        searches = service.search_ingredient(keyword)
+        return searches
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Server Error - {e}")

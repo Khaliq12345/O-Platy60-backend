@@ -119,6 +119,14 @@ class IngredientService(SupabaseService):
         if result.data:
             return result.data[0]
 
+    def search_ingredient(self, keyword: str):
+        """Search for an ingredients"""
+        results = self.client.rpc(
+            "search_ingredients", params={"search_term": keyword}
+        ).execute()
+        if results.data:
+            return results.data
+
     # placeholders
     def get_history(self, sku: str):
         return []
