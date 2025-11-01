@@ -133,3 +133,24 @@ class IngredientService(SupabaseService):
 
     def get_batches(self, sku: str):
         return []
+
+    def get_recipes(self, sku: str):
+        """Get the recipes that uses this ingredient"""
+        results = (
+            self.client.table("recipes_ingredients")
+            .select("*, recipes(name, cost, category, id)")
+            .eq("ingredient_sku", sku)
+            .execute()
+        )
+        recipes = []
+        for ingredient in results.data:
+            recipe = ingredient["recipes"]
+            recipes.append(
+                {
+                    "name": recipe["name"],
+                    "cost": recipe["cost"],
+                    "category": recipe["category"],
+                    "id": recipe["id"],
+                }
+            )
+        return {"sku": sku, "recipes": recipes}

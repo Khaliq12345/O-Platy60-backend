@@ -142,7 +142,7 @@ def adjust_stock(
         raise HTTPException(status_code=500, detail=f"Server Error - {e}")
 
 
-# GET /ingredients/{sku}/history
+# GET /ingredients/history/{sku}
 @router.get("/{sku}/history")
 def get_history(
     sku: str = Path(...),
@@ -155,7 +155,7 @@ def get_history(
         raise HTTPException(status_code=500, detail=f"Server Error - {e}")
 
 
-# GET /ingredients/{sku}/batches
+# GET /ingredients/batches/{sku}
 @router.get("/{sku}/batches")
 def get_batches(
     sku: str,
@@ -175,10 +175,25 @@ def search_ingredients(
     service: IngredientService = ingredient_depends,
 ):
     """Search for Ingredients"""
-
     try:
         searches = service.search_ingredient(keyword)
         return searches
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Server Error - {e}")
+
+
+# GET RECIPES
+@router.get("/recipes/{sku}")
+def get_recipes(
+    sku: str,
+    service: IngredientService = ingredient_depends,
+):
+    """Get Recipes using this Ingredient"""
+    try:
+        recipes = service.get_recipes(sku)
+        return recipes
     except HTTPException:
         raise
     except Exception as e:
