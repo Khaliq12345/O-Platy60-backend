@@ -125,3 +125,21 @@ class RecipeService(SupabaseService):
                 }
             )
         return {"recipe_id": recipe_id, "ingredients": ingredients}
+
+    def add_ingredient_to_recipe(
+        self, recipe_id: int, ingredient_sku: str, quantity: float
+    ):
+        """Add Ingredient to a recipe"""
+        response = (
+            self.client.table("recipes_ingredients")
+            .insert(
+                {
+                    "recipe_id": recipe_id,
+                    "ingredient_sku": ingredient_sku,
+                    "quantity_being_used": quantity,
+                }
+            )
+            .execute()
+        )
+        if response.data:
+            return response.data[0]
