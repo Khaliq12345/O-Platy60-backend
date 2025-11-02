@@ -104,3 +104,18 @@ class OrdersService(SupabaseService):
         )
         if result.data:
             return result.data[0]
+
+    def get_ingredient_orders(self, sku: str, sort: str, limit: int):
+        """Récupère les commandes d'un ingredient"""
+        desc = True if sort == "descending" else False
+        response = (
+            self.client.table("orders")
+            .select("*")
+            .eq("ingredient_id", sku)
+            .eq("delete", False)
+            .limit(limit)
+            .order("created_at", desc=desc)
+            .execute()
+        )
+        if response.data:
+            return response.data

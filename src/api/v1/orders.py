@@ -3,6 +3,7 @@ from dateparser import parse as parse_date
 from typing import Any
 from fastapi import APIRouter, HTTPException
 from src.schemas import order_schema
+from src.schemas.global_schema import Sort
 from src.schemas.order_schema import OrderStatusEnum
 from src.services.supabase_services.order_service import OrdersService
 from src.api.dependencies import order_depends
@@ -143,4 +144,29 @@ def delete_order(
         raise HTTPException(
             status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Une erreur serveur est survenue lors de la suppression - {e}",
+        )
+
+
+@router.get("/ingredient/{sku}", response_model=list[order_schema.ORDER])
+def get_ingredient_order(
+    sku: str,
+    sort: Sort,
+    limit: int = 10,
+    orders_service: OrdersService = order_depends,  # type: ignore
+):
+    """Récupère les commandes d'un ingredient"""
+    try:
+        order = orders_service.get_ingredient_orders(sku, sort.value, limit)
+        if not order:
+            raise HTTPException(
+                status_code=http_status.HTTP_404_NOT_FOUND,
+                detail="Commande non trouvée",
+            )
+        return order
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        raise HTTPException(
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Une erreur serveur est survenue - {e}",
         )

@@ -143,3 +143,17 @@ class RecipeService(SupabaseService):
         )
         if response.data:
             return response.data[0]
+
+    def edit_ingredient_quantity(
+        self, recipe_id: int, ingredient_sku: str, quantity: float
+    ):
+        """Edit the quantity of ingredient in recipe"""
+        response = (
+            self.client.table("recipes_ingredients")
+            .update({"quantity_being_used": quantity})
+            .eq("recipe_id", recipe_id)
+            .eq("ingredient_sku", ingredient_sku)
+            .execute()
+        )
+        if response.data:
+            return response.data[0]

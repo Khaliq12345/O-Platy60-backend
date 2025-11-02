@@ -177,10 +177,35 @@ def add_ingredient_to_recipe(
         recipe = recipes_service.add_ingredient_to_recipe(
             recipe_id, ingredient_sku, quantity
         )
+        return recipe
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        raise HTTPException(
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Une erreur serveur est survenue - {e}",
+        )
+
+
+@router.put(
+    "/ingredients/",
+    status_code=http_status.HTTP_201_CREATED,
+)
+def edit_ingredient_of_recipe(
+    recipe_id: int,
+    ingredient_sku: str,
+    quantity: float,
+    recipes_service: RecipeService = recipe_depends,
+):
+    """Edit Ingredient quantity of Recipe"""
+    try:
+        recipe = recipes_service.edit_ingredient_quantity(
+            recipe_id, ingredient_sku, quantity
+        )
         if not recipe:
             raise HTTPException(
                 status_code=http_status.HTTP_404_NOT_FOUND,
-                detail="repat non trouvée",
+                detail="ingredient non trouvée",
             )
         return recipe
     except HTTPException as e:
@@ -188,5 +213,5 @@ def add_ingredient_to_recipe(
     except Exception as e:
         raise HTTPException(
             status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Une erreur serveur est survenue lors de la création de la repat - {e}",
+            detail=f"Une erreur serveur est survenue - {e}",
         )
