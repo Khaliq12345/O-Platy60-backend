@@ -57,7 +57,9 @@ class OrdersService(SupabaseService):
     def create_order(self, order_data: dict[str, Any]) -> dict[str, Any] | None:
         """Crée une nouvelle commande d'ingrédient"""
         # Insertion de la commande
-        order_response = self.client.table("orders").insert(order_data).execute()
+        order_dict = {k: v for k, v in order_data.items() if v is not None}
+        print(order_dict)
+        order_response = self.client.table("orders").insert(order_dict).execute()
         # Récupération de la commande créée
         result = order_response.data
         if result:
