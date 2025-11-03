@@ -100,7 +100,7 @@ class OrdersService(SupabaseService):
         # Suppression logique
         result = (
             self.client.table("orders")
-            .update({"delete": True, "last_updated": datetime.now().isoformat()})
+            .update({"delete": True, "status": "cancelled"})
             .eq("id", order_id)
             .execute()
         )
