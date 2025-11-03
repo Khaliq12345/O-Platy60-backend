@@ -1,6 +1,5 @@
 from pydantic import BaseModel
 from enum import Enum
-from datetime import datetime
 from src.schemas.ingredients_schema import Ingredient
 
 

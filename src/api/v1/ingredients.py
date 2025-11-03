@@ -1,6 +1,6 @@
 import json
 from fastapi import APIRouter, HTTPException, Path, status as http_status
-from src.schemas.ingredients_schema import Ingredient
+from src.schemas.ingredients_schema import Ingredient, Stock_Adjustment
 from src.api.dependencies import ingredient_depends
 from src.services.supabase_services.ingredient_service import IngredientService
 from typing import Any, Dict, Optional
@@ -124,17 +124,15 @@ def delete_ingredient(
 
 
 # POST /ingredients/{sku}/adjust
-@router.post("/{sku}/adjust", response_model=Optional[Ingredient])
+@router.post("/adjust")
 def adjust_stock(
-    sku: str,
-    adjustment: float,
+    adjustment_data: Stock_Adjustment,
     service: IngredientService = ingredient_depends,
 ):
     """Ajustement rapide du stock"""
     try:
-        adjusted = service.adjust_stock(sku, adjustment)
-        if not adjusted:
-            raise HTTPException(status_code=404, detail="Ingredient not found")
+        adjustment_dict = json.loads(adjustment_data.model_dump_json())
+        adjusted = service.adjust_stock(adjustment_dict)
         return adjusted
     except HTTPException:
         raise

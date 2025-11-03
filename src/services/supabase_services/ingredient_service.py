@@ -102,20 +102,10 @@ class IngredientService(SupabaseService):
         if result.data:
             return result.data[0]
 
-    def adjust_stock(self, sku: str, quantity: float):
+    def adjust_stock(self, adjust_dict: dict[str, Any]):
         """Ajuste rapidement le stock"""
-        ingredient = self.get_ingredient(sku)
-        if not ingredient:
-            return None
-
-        now_date = datetime.now().isoformat()
-        new_stock = ingredient["current_stock_level"] + quantity
-        data = {
-            "current_stock_level": new_stock,
-            "last_updated": now_date,
-            "last_received": now_date,
-        }
-        result = self.client.table("ingredients").update(data).eq("sku", sku).execute()
+        update_dict = {k: v for k, v in adjust_dict.items() if v is not None}
+        result = self.client.table("stock_adjustments").insert(update_dict).execute()
         if result.data:
             return result.data[0]
 
