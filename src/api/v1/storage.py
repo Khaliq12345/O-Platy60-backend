@@ -16,7 +16,9 @@ async def upload_to_storage(
 ) -> dict[str, str]:
     try:
         file_bytes = await file.read()
-        public_url = storage_service.upload_file(file_bytes, file_id, file_format, folder)
+        public_url = storage_service.upload_file(
+            file_bytes, file_id, file_format, folder
+        )
         return {"public_url": public_url}
     except ValueError as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
